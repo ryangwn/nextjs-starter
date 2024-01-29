@@ -1,0 +1,76 @@
+version: "3"
+
+services:
+  nextjs:
+    image: mxdcodes/personal-website:latest
+    container_name: personal-website
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+    network_mode: "host"
+
+  imgproxy:
+    restart: unless-stopped
+    image: darthsim/imgproxy:${IMGPROXY_TAG:-latest}
+    container_name: imgproxy_app
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /data/containers/imgproxy/www:/home:cached
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "imgproxy", "health" ]
+    environment:
+      ### See:
+      ### https://docs.imgproxy.net/configuration/options
+
+      ### options
+      IMGPROXY_ALLOWED_SOURCES: https://mxd.codes/
+
+      ### log and debug
+      IMGPROXY_LOG_LEVEL: "warn"
+      IMGPROXY_ENABLE_DEBUG_HEADERS: "false"
+      IMGPROXY_DEVELOPMENT_ERRORS_MODE: "false"
+      IMGPROXY_REPORT_DOWNLOADING_ERRORS: "false"
+
+      ### timeouts
+      IMGPROXY_READ_TIMEOUT: 10
+      IMGPROXY_WRITE_TIMEOUT: 10
+      IMGPROXY_DOWNLOAD_TIMEOUT: 10
+      IMGPROXY_KEEP_ALIVE_TIMEOUT: 300
+      IMGPROXY_MAX_SRC_FILE_SIZE: 33554432 # 32MB
+      IMGPROXY_MAX_SRC_RESOLUTION: 48
+
+      ### image source
+      IMGPROXY_TTL: 2592000 # client-side cache time is 30 days
+      IMGPROXY_USE_ETAG: "false"
+      IMGPROXY_SO_REUSEPORT: "true"
+      IMGPROXY_IGNORE_SSL_VERIFICATION: "false"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /home
+      IMGPROXY_SKIP_PROCESSING_FORMATS: "svg,webp,avif"
+
+      ### presets
+      IMGPROXY_AUTO_ROTATE: "true"
+      #IMGPROXY_WATERMARK_PATH: /home/noimage_thumb.jpg
+      IMGPROXY_PRESETS: default=resizing_type:fit/gravity:sm,logo=watermark:0.5:soea:10:10:0.15,center_logo=watermark:0.3:ce:0:0:0.3
+
+      ### compression
+      IMGPROXY_STRIP_METADATA: "true"
+      IMGPROXY_STRIP_COLOR_PROFILE: "true"
+      IMGPROXY_FORMAT_QUALITY: jpeg=80,webp=70,avif=50
+      IMGPROXY_JPEG_PROGRESSIVE: "false"
+      IMGPROXY_PNG_INTERLACED: "false"
+      IMGPROXY_PNG_QUANTIZATION_COLORS: 128
+      IMGPROXY_PNG_QUANTIZE: "false"
+      IMGPROXY_MAX_ANIMATION_FRAMES: 64
+      IMGPROXY_GZIP_COMPRESSION: 0
+      IMGPROXY_AVIF_SPEED: 8
+
+      ### For URL signature
+      IMGPROXY_KEY: KEY
+      IMGPROXY_SALT: SALT
+      IMGPROXY_SIGNATURE_SIZE: 32
+    network_mode: "host"
